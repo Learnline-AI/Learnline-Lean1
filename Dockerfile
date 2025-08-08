@@ -24,11 +24,7 @@ WORKDIR /app
 # Upgrade pip
 RUN pip install --no-cache-dir --upgrade pip
 
-# Install CPU-only PyTorch for Railway (lightweight)
-RUN pip install --no-cache-dir \
-    torch==2.1.0+cpu \
-    torchaudio==2.1.0+cpu \
-    --index-url https://download.pytorch.org/whl/cpu
+# PyTorch will be installed by RealtimeSTT with correct versions
 
 # Skip DeepSpeed for Railway deployment (not needed for basic transcription)
 # DeepSpeed requires GPU and adds significant complexity and size
