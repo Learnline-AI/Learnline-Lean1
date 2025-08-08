@@ -1,11 +1,9 @@
-# Live Transcription - Minimal Railway Dependencies
-# Let RealtimeSTT handle its own audio processing dependencies
+# speech to text
+realtimestt==0.3.104
 
-# Core Web Framework (Essential)
+# webserver dependencies
 fastapi
-uvicorn[standard]
-websockets
-python-dotenv
+uvicorn
 
-# Core STT (Handles its own scipy, numpy, torch dependencies)
-RealtimeSTT
+# configuration
+python-dotenv
