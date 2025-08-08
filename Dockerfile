@@ -13,6 +13,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1-dev \
     libffi-dev \
     libssl-dev \
+    python3-dev \
+    libblas-dev \
+    liblapack-dev \
+    gfortran \
+    pkg-config \
     git \
     curl \
     && apt-get clean \
