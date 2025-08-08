@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
     git \
     curl \
+    portaudio19-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
