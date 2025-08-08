@@ -1,0 +1,36 @@
+# Core dependencies for live transcription service
+# Optimized for Railway deployment with Hindi/English support
+
+# Speech to Text (CORE)
+realtimestt==0.3.104
+
+# Web server dependencies (ESSENTIAL)
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# Audio processing (REQUIRED)
+scipy>=1.11.0
+numpy>=1.24.0
+soundfile>=0.12.0
+
+# HTTP client for API calls
+httpx>=0.25.0
+
+# Configuration (ESSENTIAL)
+python-dotenv>=1.0.0
+
+# Language detection for Hindi/English (OPTIONAL - enhances experience)
+langdetect>=1.0.9
+
+# Performance optimization
+orjson>=3.9.0  # Faster JSON processing
+
+# Memory optimization
+psutil>=5.9.0  # Memory monitoring
+
+# Error handling and logging
+structlog>=23.1.0  # Better logging
+
+# REMOVED: All TTS dependencies (realtimetts, kokoro, coqui, orpheus)
+# REMOVED: LLM providers (ollama, openai) - not needed for transcription only
+# REMOVED: Heavy ML dependencies not essential for basic transcription

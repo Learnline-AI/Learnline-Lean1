@@ -1,0 +1,47 @@
+# Railway Nixpacks Configuration for Live Transcription Service
+# Optimized for Python transcription service with audio processing dependencies
+
+[variables]
+NIXPACKS_PYTHON_VERSION = "3.11"
+PYTHONUNBUFFERED = "1"
+PYTHONDONTWRITEBYTECODE = "1"
+PIP_NO_CACHE_DIR = "1"
+
+[phases.build]
+# Install system dependencies required for audio processing and transcription
+dependsOn = ["setup"]
+cmds = [
+    "apt-get update",
+    "apt-get install -y --no-install-recommends build-essential libsndfile1-dev libffi-dev libssl-dev git curl ffmpeg portaudio19-dev libasound2-dev",
+    "apt-get clean",
+    "rm -rf /var/lib/apt/lists/*"
+]
+
+[phases.install]
+# Install Python dependencies with CPU-optimized PyTorch for Railway
+dependsOn = ["build"] 
+cmds = [
+    "pip install --upgrade pip",
+    "pip install --no-cache-dir torch==2.1.0+cpu torchaudio==2.1.0+cpu --index-url https://download.pytorch.org/whl/cpu",
+    "cd code && pip install --no-cache-dir --prefer-binary -r requirements.txt"
+]
+
+[phases.setup]
+# Set up the working environment
+nixPkgs = [
+    "python311",
+    "python311Packages.pip",
+    "libsndfile",
+    "ffmpeg-full",
+    "portaudio",
+    "alsa-lib",
+    "pkg-config"
+]
+
+[start]
+# Start the transcription server
+cmd = "cd code && python -m uvicorn server:app --host 0.0.0.0 --port $PORT --workers 1"
+
+[build]
+# Enable build-time optimizations for Railway
+buildCommand = "cd code && pip install --no-cache-dir torch==2.1.0+cpu torchaudio==2.1.0+cpu --index-url https://download.pytorch.org/whl/cpu && pip install --no-cache-dir --prefer-binary -r requirements.txt"

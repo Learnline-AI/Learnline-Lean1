@@ -1,0 +1,36 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pip install --no-cache-dir torch==2.1.0+cpu torchaudio==2.1.0+cpu --index-url https://download.pytorch.org/whl/cpu && pip install --no-cache-dir -r code/requirements.txt"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "sleepApplication": false,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 5,
+    "healthcheckPath": "/api/status",
+    "healthcheckTimeout": 30,
+    "cronJobs": []
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "RAILWAY_DEPLOYMENT": "true",
+        "MAX_AUDIO_QUEUE_SIZE": "30",
+        "LOG_LEVEL": "INFO",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "HF_HOME": "/tmp/.cache/huggingface",
+        "TORCH_HOME": "/tmp/.cache/torch",
+        "TRANSFORMERS_CACHE": "/tmp/.cache/transformers",
+        "PIPELINE_LATENCY": "0.5",
+        "DEFAULT_LANGUAGE": "en",
+        "SUPPORTED_LANGUAGES": "en,hi,hi-en"
+      }
+    }
+  },
+  "regions": [
+    "us-west1"
+  ]
+}
