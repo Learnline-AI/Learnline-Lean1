@@ -1,4 +1,4 @@
-# Node.js Dockerfile for Voice Chat Application
+# Node.js Dockerfile for Voice Chat Application - v2
 FROM node:18-alpine
 
 WORKDIR /app
@@ -34,6 +34,7 @@ RUN npm run build
 # Expose port
 EXPOSE 3001
 
-# Start server
+# Start server  
 WORKDIR /app/server
+ENV NODE_ENV=production
 CMD ["node", "dist/index.js"]
