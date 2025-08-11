@@ -24,10 +24,12 @@ WORKDIR /app
 COPY . .
 
 # Build client
-RUN cd client && npm run build
+WORKDIR /app/client
+RUN npm run build
 
 # Build server
-RUN cd server && npm run build
+WORKDIR /app/server
+RUN npm run build
 
 # Expose port
 EXPOSE 3001
