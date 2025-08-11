@@ -2,7 +2,6 @@
 builder = "dockerfile"
 
 [deploy]
-startCommand = "cd server && npm start"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
 restartPolicyType = "always"
