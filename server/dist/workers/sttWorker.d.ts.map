@@ -1,0 +1,1 @@
+{"version":3,"file":"sttWorker.d.ts","sourceRoot":"","sources":["../../workers/sttWorker.ts"],"names":[],"mappings":"AAGA,OAAO,EAAE,mBAAmB,EAAE,MAAM,iBAAiB,CAAC;AAItD,qBAAa,SAAS;IACpB,OAAO,CAAC,MAAM,CAAuB;IACrC,OAAO,CAAC,YAAY,CAAS;IAC7B,OAAO,CAAC,KAAK,CAA2E;;IAQxF,OAAO,CAAC,gBAAgB;IAqClB,eAAe,CAAC,WAAW,EAAE,MAAM,GAAG,OAAO,CAAC,mBAAmB,CAAC;IAOxE,OAAO,CAAC,YAAY;IAUb,OAAO;CAMf"}
