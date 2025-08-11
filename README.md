@@ -1,6 +1,6 @@
-# Voice Chat AI - Clean Implementation
+# Learnline V2 - Voice Chat AI
 
-A minimal, high-performance voice chat application with AI responses, built using proven components extracted from the Learnline AI Tutor project.
+A modern, high-performance voice chat application with AI responses, built using TypeScript, React, and Node.js. This is the second iteration of the Learnline AI Tutor project, featuring a clean architecture and optimized performance.
 
 ## 🚀 Features
 
@@ -10,6 +10,7 @@ A minimal, high-performance voice chat application with AI responses, built usin
 - **Text-to-Speech**: ElevenLabs HTTP API (no streaming complexity)
 - **WebSocket Communication**: Robust connection management with reconnection logic
 - **Clean Audio Pipeline**: Worker-based processing, proper format handling
+- **Modern UI**: React-based frontend with TypeScript
 
 ## 🏗️ Architecture
 

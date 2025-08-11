@@ -1,0 +1,9 @@
+# speech to text
+realtimestt==0.3.104
+
+# webserver dependencies
+fastapi
+uvicorn
+
+# configuration
+python-dotenv

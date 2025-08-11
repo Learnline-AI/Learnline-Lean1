@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live Transcription</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap">
+  <style>
+    :root {
+      /* Updated colors for transcription app */
+      --primary: #1e40af;              /* Professional blue */
+      --primary-dark: #1e3a8a;         /* Darker blue for hover */
+      --accent: #059669;               /* Green for success states */
+      --accent-dark: #047857;          /* Darker green */
+      --warning: #dc2626;              /* Red for recording */
+      --warning-dark: #b91c1c;         /* Darker red */
+      --transcription-bg: #f8fafc;     /* Light blue-gray for transcription area */
+      --partial-text: #64748b;         /* Gray for partial transcriptions */
+      --final-text: #0f172a;           /* Dark for final transcriptions */
+      --timestamp: #6b7280;            /* Gray for timestamps */
+      --bg: #ffffff;                   /* Clean white background */
+      --border: #e2e8f0;               /* Light border */
+      --shadow: 0 4px 12px rgba(0,0,0,0.1);
+      --shadow-lg: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      color: #0f172a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.6;
+    }
+    
+    #app {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .transcription-container {
+      flex: 1;
+      max-width: 800px;
+      width: 100%;
+      background: var(--bg);
+      box-shadow: var(--shadow-lg);
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    
+    .header {
+      background: var(--primary);
+      color: #fff;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .header-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    
+    .language-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .language-selector label {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    
+    #languageSelect {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-size: 0.9rem;
+      cursor: pointer;
+      outline: none;
+    }
+    
+    #languageSelect option {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .status {
+      font-size: 0.9rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #6b7280;
+    }
+    
+    .status-indicator.recording {
+      background: #ef4444;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .transcription-area {
+      flex: 1;
+      padding: 24px;
+      background: var(--transcription-bg);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 400px;
+    }
+    
+    .transcription-entry {
+      background: white;
+      padding: 16px 20px;
+      border-radius: 12px;
+      border-left: 4px solid var(--primary);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      transition: all 0.2s ease;
+    }
+    
+    .transcription-entry.partial {
+      border-left-color: var(--partial-text);
+      background: #f1f5f9;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .transcription-entry.final {
+      border-left-color: var(--accent);
+    }
+    
+    .transcription-timestamp {
+      font-size: 0.75rem;
+      color: var(--timestamp);
+      font-weight: 500;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .transcription-text {
+      font-size: 1rem;
+      color: var(--final-text);
+      line-height: 1.6;
+    }
+    
+    .transcription-entry.partial .transcription-text {
+      color: var(--partial-text);
+      font-style: italic;
+    }
+    
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      text-align: center;
+      color: var(--partial-text);
+      gap: 16px;
+    }
+    
+    .empty-state-icon {
+      width: 64px;
+      height: 64px;
+      background: var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .controls-bar {
+      display: flex;
+      padding: 20px 24px;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .control-group {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      gap: 8px;
+      min-width: 44px;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+    
+    .btn-success {
+      background: var(--accent);
+      color: white;
+    }
+    
+    .btn-success:hover:not(:disabled) {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+    }
+    
+    .btn-danger {
+      background: var(--warning);
+      color: white;
+    }
+    
+    .btn-danger:hover:not(:disabled) {
+      background: var(--warning-dark);
+      transform: translateY(-1px);
+    }
+    
+    .btn-secondary {
+      background: #f1f5f9;
+      color: var(--final-text);
+      border: 1px solid var(--border);
+    }
+    
+    .btn-secondary:hover:not(:disabled) {
+      background: #e2e8f0;
+      transform: translateY(-1px);
+    }
+    
+    .export-options {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Mobile responsive design */
+    @media (max-width: 768px) {
+      #app {
+        padding: 10px;
+      }
+      
+      .transcription-container {
+        border-radius: 16px;
+      }
+      
+      .header {
+        padding: 20px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      
+      .header-left {
+        justify-content: space-between;
+      }
+      
+      .language-selector {
+        justify-content: center;
+      }
+      
+      .transcription-area {
+        padding: 16px;
+        min-height: 300px;
+      }
+      
+      .controls-bar {
+        padding: 16px;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .control-group {
+        justify-content: center;
+      }
+      
+      .export-options {
+        margin-left: 0;
+        justify-content: center;
+      }
+      
+      .btn {
+        padding: 14px 16px;
+        font-size: 0.9rem;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      #app {
+        padding: 0;
+      }
+      
+      .transcription-container {
+        border-radius: 0;
+        margin: 0;
+        min-height: 100vh;
+      }
+      
+      .header-title {
+        font-size: 1.25rem;
+      }
+      
+      .transcription-entry {
+        padding: 12px 16px;
+      }
+      
+      .controls-bar {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        border-top: 2px solid var(--border);
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="transcription-container">
+      <div class="header">
+        <div class="header-left">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 1C13.1046 1 14 1.89543 14 3V11C14 12.1046 13.1046 13 12 13C10.8954 13 10 12.1046 10 11V3C10 1.89543 10.8954 1 12 1Z" fill="currentColor"/>
+            <path d="M18 11C18 14.3137 15.3137 17 12 17C8.68629 17 6 14.3137 6 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M12 17V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M8 21H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <h1 class="header-title">Live Transcription</h1>
+        </div>
+        <div class="language-selector">
+          <label for="languageSelect">Language:</label>
+          <select id="languageSelect">
+            <option value="en">English</option>
+            <option value="hi">Hindi</option>
+            <option value="mixed">Hindi/English</option>
+          </select>
+        </div>
+        <div class="status" id="status">
+          <div class="status-indicator" id="statusIndicator"></div>
+          <span id="statusText">Ready to start</span>
+        </div>
+      </div>
+      
+      <div class="transcription-area" id="transcriptionArea">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-state-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 1C13.1046 1 14 1.89543 14 3V11C14 12.1046 13.1046 13 12 13C10.8954 13 10 12.1046 10 11V3C10 1.89543 10.8954 1 12 1Z" fill="currentColor"/>
+              <path d="M18 11C18 14.3137 15.3137 17 12 17C8.68629 17 6 14.3137 6 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <h3>Start Recording to Begin Transcription</h3>
+            <p>Click the record button to start capturing audio and see real-time transcriptions appear here.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="controls-bar">
+        <div class="control-group">
+          <button id="startBtn" title="Start recording" class="btn btn-success">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="8" fill="currentColor"/>
+            </svg>
+            Start
+          </button>
+          
+          <button id="stopBtn" title="Stop recording" class="btn btn-danger" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/>
+            </svg>
+            Stop
+          </button>
+          
+          <button id="clearBtn" title="Clear transcription" class="btn btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M8 6V4C8 3.44772 8.44772 3 9 3H15C15.5523 3 16 3.44772 16 4V6M19 6V20C19 20.5523 18.5523 21 18 21H6C5.44772 21 5 20.5523 5 20V6H19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Clear
+          </button>
+        </div>
+        
+        <div class="export-options">
+          <button id="exportTxtBtn" title="Export as text file" class="btn btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 2H6C5.44772 2 5 2.44772 5 3V21C5 21.5523 5.44772 22 6 22H18C18.5523 22 19 21.5523 19 21V7L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M14 2V7H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            TXT
+          </button>
+          
+          <button id="exportJsonBtn" title="Export as JSON file" class="btn btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 2H6C5.44772 2 5 2.44772 5 3V21C5 21.5523 5.44772 22 6 22H18C18.5523 22 19 21.5523 19 21V7L14 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M14 2V7H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M10 12H14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M10 16H14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            JSON
+          </button>
+          
+          <button id="copyBtn" title="Copy to clipboard" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+              <path d="M5 15H4C3.44772 15 3 14.5523 3 14V4C3 3.44772 3.44772 3 4 3H14C14.5523 3 15 3.44772 15 4V5" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            Copy
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
