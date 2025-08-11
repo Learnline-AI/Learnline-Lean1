@@ -9,9 +9,7 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
 const websocketService_1 = require("./services/websocketService");
-const vadService_1 = require("./services/vadService");
-const spectralGating_1 = require("./services/spectralGating");
-const sttWorker_1 = require("./workers/sttWorker");
+const pythonAudioService_1 = require("./services/pythonAudioService");
 const aiService_1 = require("./services/aiService");
 const ttsService_1 = require("./services/ttsService");
 const audioUtils_1 = require("./utils/audioUtils");
@@ -31,9 +29,7 @@ class VoiceChatServer {
         this.audioBuffer = new Map();
         this.conversationHistory = new Map();
         this.wsService = new websocketService_1.WebSocketService(server);
-        this.vadService = new vadService_1.VADService();
-        this.spectralGating = new spectralGating_1.SpectralGatingService();
-        this.sttWorker = new sttWorker_1.STTWorker();
+        this.pythonAudioService = new pythonAudioService_1.PythonAudioService();
         this.aiService = new aiService_1.AIService();
         this.ttsService = new ttsService_1.TTSService();
         this.initialize();
@@ -44,12 +40,14 @@ class VoiceChatServer {
             console.error('❌ AI configuration validation failed');
             process.exit(1);
         }
-        try {
-            await this.vadService.initialize();
-            console.log('✅ VAD Service initialized');
-        }
-        catch (error) {
-            console.warn('⚠️ VAD initialization failed, using fallback:', error);
+        // Test Python microservice connection
+        const pythonHealthy = await this.pythonAudioService.checkHealth();
+        console.log(`🐍 Python Audio Service: ${pythonHealthy ? '✅ Connected' : '⚠️ Offline (will continue with reduced functionality)'}`);
+        if (pythonHealthy) {
+            const serviceInfo = await this.pythonAudioService.getServiceInfo();
+            if (serviceInfo) {
+                console.log(`🔧 Python service info:`, serviceInfo);
+            }
         }
         this.setupWebSocketHandlers();
         const ttsTest = await this.ttsService.testConnection();
@@ -63,7 +61,7 @@ class VoiceChatServer {
             this.conversationHistory.set(socket.id, []);
             socket.on('audio:start', () => {
                 console.log(`🎤 Audio session started: ${socket.id}`);
-                this.vadService.resetConversationState();
+                // Audio session started - Python service will handle VAD
                 this.audioBuffer.set(socket.id, []);
             });
             socket.on('audio:chunk', async (chunk) => {
@@ -82,14 +80,13 @@ class VoiceChatServer {
     async processAudioChunk(socketId, chunk) {
         try {
             const audioBuffer = audioUtils_1.AudioUtils.arrayBufferToBuffer(chunk.data);
-            const vadResult = await this.vadService.processAudio(audioBuffer);
-            if (vadResult.isSpeech) {
-                const buffers = this.audioBuffer.get(socketId) || [];
-                buffers.push(audioBuffer);
-                this.audioBuffer.set(socketId, buffers);
-                if (this.vadService.shouldEndSegment()) {
-                    await this.processCompleteAudio(socketId);
-                }
+            // For now, collect audio chunks - Python service will handle VAD
+            const buffers = this.audioBuffer.get(socketId) || [];
+            buffers.push(audioBuffer);
+            this.audioBuffer.set(socketId, buffers);
+            // Simple threshold for ending segments (can be made smarter later)
+            if (buffers.length >= 50) { // ~2-3 seconds of audio at 16kHz
+                await this.processCompleteAudio(socketId);
             }
         }
         catch (error) {
@@ -107,13 +104,9 @@ class VoiceChatServer {
             console.log(`🎵 Processing complete audio for ${socketId} (${buffers.length} chunks)`);
             const combinedBuffer = Buffer.concat(buffers);
             this.audioBuffer.set(socketId, []);
-            let processedAudio = combinedBuffer;
-            if (this.spectralGating.isSpectralGatingEnabled()) {
-                console.log('🔊 Applying spectral gating...');
-                processedAudio = await this.spectralGating.processAudio(combinedBuffer);
-            }
-            console.log('🗣️ Starting speech-to-text...');
-            const transcription = await this.sttWorker.transcribeAudio(processedAudio);
+            // Send to Python microservice for processing (includes spectral gating + STT)
+            console.log('🐍 Sending audio to Python microservice for STT...');
+            const transcription = await this.pythonAudioService.transcribeAudio(combinedBuffer);
             if (!transcription.text.trim()) {
                 console.log('Empty transcription, skipping...');
                 return;
@@ -136,7 +129,7 @@ class VoiceChatServer {
         catch (error) {
             console.error(`Error processing audio for ${socketId}:`, error);
             this.wsService['io'].to(socketId).emit('error', {
-                message: 'Audio processing failed',
+                message: error instanceof Error ? error.message : 'Audio processing failed',
                 code: 'PROCESSING_ERROR'
             });
         }
@@ -148,9 +141,6 @@ class VoiceChatServer {
     async shutdown() {
         console.log('🛑 Shutting down server...');
         this.wsService.cleanup();
-        this.vadService.cleanup();
-        this.spectralGating.cleanup();
-        this.sttWorker.cleanup();
         this.ttsService.cleanup();
         server.close(() => {
             console.log('✅ Server shut down gracefully');
@@ -158,23 +148,27 @@ class VoiceChatServer {
         });
     }
 }
-app.get('/health', (req, res) => {
+app.get('/health', async (req, res) => {
+    const serverInstance = global.voiceChatServer;
+    const pythonHealthy = serverInstance ? await serverInstance.pythonAudioService.checkHealth() : false;
     res.json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
         services: {
             websocket: 'running',
-            vad: 'running',
-            stt: 'running',
+            python_audio_service: pythonHealthy ? 'connected' : 'offline',
             ai: 'running',
             tts: 'running'
-        }
+        },
+        python_service_url: serverInstance ? serverInstance.pythonAudioService.getPythonServiceUrl() : 'unknown'
     });
 });
 app.get('*', (req, res) => {
     res.sendFile(path_1.default.join(__dirname, '../../client/dist/index.html'));
 });
 const voiceChatServer = new VoiceChatServer();
+// Make server instance accessible for health check
+global.voiceChatServer = voiceChatServer;
 process.on('SIGINT', () => {
     console.log('\n🛑 Received SIGINT, shutting down gracefully...');
     voiceChatServer.shutdown();

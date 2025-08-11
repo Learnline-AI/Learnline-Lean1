@@ -2,7 +2,7 @@ let ort: any = null;
 try {
   ort = require('onnxruntime-node');
 } catch (error) {
-  console.warn('ONNX Runtime not available:', error.message);
+  console.warn('ONNX Runtime not available:', error instanceof Error ? error.message : 'Unknown error');
 }
 import { VADResult } from '../types/shared';
 import { AudioUtils } from '../utils/audioUtils';
